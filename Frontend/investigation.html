@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Server Investigation</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h2>Web Server Investigation</h2>
+    <input type="text" id="domain" placeholder="Enter domain (e.g., example.com)">
+    <button id="investigate">Investigate</button>
+    <pre id="output"></pre>
+  </div>
+  <script>
+    const investigateBtn = document.getElementById("investigate");
+    const outputDiv = document.getElementById("output");
+
+    const fetchResults = async (endpoint, data) => {
+      try {
+        const response = await fetch(`http://127.0.0.1:5000/api/${endpoint}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        return await response.json();
+      } catch (err) {
+        return { error: "Failed to fetch data" };
+      }
+    };
+
+    investigateBtn.addEventListener("click", async () => {
+      const domain = document.getElementById("domain").value;
+      if (!domain) {
+        outputDiv.textContent = "Please enter a domain.";
+        return;
+      }
+
+      outputDiv.textContent = "Investigating...";
+
+      const dnsResult = await fetchResults("dns", { domain });
+      const whoisResult = await fetchResults("whois", { domain });
+
+      let ipWhoisResult = {};
+      if (dnsResult.ip_address) {
+        ipWhoisResult = await fetchResults("ipwhois", { ip_address: dnsResult.ip_address });
+      }
+
+      const headersResult = await fetchResults("http_headers", { domain });
+
+      outputDiv.textContent = JSON.stringify(
+        { dnsResult, whoisResult, ipWhoisResult, headersResult },
+        null,
+        2
+      );
+    });
+  </script>
+</body>
+</html>
